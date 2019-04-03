@@ -117,9 +117,9 @@ int main(int argc, char **argv) {
     /* cin >> input; */
 
     // Draw background two times for front and back buffer
-    /* const char *titles[] = { */
-    /*     "CNN - Object Detection", */
-    /* }; */
+    const char *titles[] = {
+        "CNN - Object Detection",
+    };
     for (int i = 0; i < 2; ++i) {
         bg_overlay.print_to_display(0, 0);
         print_demo_title(bg_overlay, titles);
@@ -154,8 +154,18 @@ int main(int argc, char **argv) {
         /* get_bboxes(tensor, boxes); */
         /* draw_bboxes(boxes, cam_overlay); */
 
+        string s = "{}".format(tensor);
+        bg_overlay.set_text(0, 0, s, 12, 0x0042f4eb);
+        bg_overlay.print_to_display(0, 0);
+
         // Draw detection result to screen
         cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
+
+        // Print identification result to screen
+        // print_result and catrank functions are defined in util_draw.cpp
+        /* print_result(catstr_vec, (SCREEN_W / 5), IMAGE_W + 245, */
+        /*         catrank(&tensor.front()), bg_overlay); */
+
 
         // Output HW processing times
         int conv_time_tot = network.get_conv_usec();
