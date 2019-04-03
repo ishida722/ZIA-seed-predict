@@ -32,39 +32,35 @@
 #include <string>
 #include <vector>
 
-#include "Seed_gen.h"
+#include "KerasGoogLeNet_gen.h"
 #include "util_draw.h"
 #include "util_input.h"
 #include "demo_common.h"
+#include "imagenet_1000_categories.h"
 
 using namespace std;
 using namespace dmp;
 using namespace util;
 
+#define FILENAME_WEIGHTS "KerasGoogLeNet_weights.bin"
+
 #define SCREEN_W (get_screen_width())
 #define SCREEN_H (get_screen_height())
 
-#ifdef __aarch64__
-#define IMAGE_W 640
-#define IMAGE_H 512
+#define IMAGE_W 224
+#define IMAGE_H 224
 
 #define CIMAGE_W 640
 #define CIMAGE_H 480
-#else
-#define IMAGE_W 320
-#define IMAGE_H 256
-
-#define CIMAGE_W 320
-#define CIMAGE_H 240
-#endif
 
 #define PIMAGE_W 320
 #define PIMAGE_H 256
 
-#define FILENAME_WEIGHTS "YOLOv3_weights.bin"
-
 // Define CNN network model object
-CYOLOv3 network;
+CKerasGoogLeNet network;
+
+// Categories strings
+std::vector<std::string> catstr_vec(categories, categories + 1000);
 
 // Buffer for decoded image data
 uint32_t imgView[IMAGE_W * IMAGE_H];
@@ -77,6 +73,7 @@ void draw_bboxes(const vector<float> &boxes, COverlayRGB &overlay);
 
 int main(int argc, char **argv) {
   // Initialize FB
+  cout << "start" << endl;
   if (!init_fb()) {
     cout << "init_fb() failed." << endl;
     return 1;
@@ -84,20 +81,25 @@ int main(int argc, char **argv) {
 
   // Initialize WebCam
   if (dmp::util::open_cam(CIMAGE_W, CIMAGE_H, 20)) {
+    cout << "failed camera init" << endl;
     return -1;
   }
 
-  // Initialize network object
-//   network.Verbose(0);
-//   if (!network.Initialize()) {
-//     return -1;
-//   }
-//   if (!network.LoadWeights(FILENAME_WEIGHTS)) {
-//     return -1;
-//   }
-//   if (!network.Commit()) {
-//     return -1;
-//   }
+  /* Initialize network object */
+      network.Verbose(0);
+  if (!network.Initialize()) {
+      cout << "Failed network init" << endl;
+      return -1;
+  }
+  /* if (!network.LoadWeights(FILENAME_WEIGHTS)) { */
+  /*     cout << "Failed load weights" << endl; */
+  /*     return -1; */
+  /* } */
+  if (!network.Commit()) {
+      cout << "Failed network commit" << endl;
+      return -1;
+  }
+  cout << "network init ok" << endl;
 
   // Get HW module frequency
   string conv_freq;
@@ -106,20 +108,23 @@ int main(int argc, char **argv) {
   // Create background and image overlay
   COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
   bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
-  bg_overlay.load_ppm_img("fpgatitle");
+  /* bg_overlay.load_ppm_img("fpgatitle"); */
   COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
   cam_overlay.alloc_mem_overlay(CIMAGE_W, CIMAGE_H);
 
+  /* string input; */
+  /* cin >> input; */
+
   // Draw background two times for front and back buffer
-//   const char *titles[] = {
-//     "CNN - Object Detection",
-//     "Bounding Box and Object Class detection",
-//   };
-//   for (int i = 0; i < 2; ++i) {
-//     bg_overlay.print_to_display(0, 0);
-//     print_demo_title(bg_overlay, titles);
-//     swap_buffer();
-//   }
+ const char *titles[] = {
+   "CNN - Object Detection",
+   "Bounding Box and Object Class detection",
+ };
+ for (int i = 0; i < 2; ++i) {
+   bg_overlay.print_to_display(0, 0);
+   print_demo_title(bg_overlay, titles);
+   swap_buffer();
+ }
 
   int exit_code = -1;
   bool pause = false;
@@ -134,7 +139,7 @@ int main(int argc, char **argv) {
         break;
       }
       // 推測にまわすデータを作成
-    //   cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
+       cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
       // Pre-process the image data
     //   preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H,
                     // 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
