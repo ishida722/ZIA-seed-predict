@@ -47,14 +47,16 @@ using namespace util;
 #define SCREEN_W (get_screen_width())
 #define SCREEN_H (get_screen_height())
 
-#define IMAGE_W 224
-#define IMAGE_H 224
+#define IMAGE_W 640
+#define IMAGE_H 512
 
 #define CIMAGE_W 640
 #define CIMAGE_H 480
 
 #define PIMAGE_W 320
 #define PIMAGE_H 256
+
+#define ERR(...) fprintf(stderr, __VA_ARGS__); fflush(stderr)
 
 // Define CNN network model object
 CKerasGoogLeNet network;
@@ -72,102 +74,104 @@ void get_bboxes(const vector<float> &tensor, vector<float> &boxes);
 void draw_bboxes(const vector<float> &boxes, COverlayRGB &overlay);
 
 int main(int argc, char **argv) {
-  // Initialize FB
-  cout << "start" << endl;
-  if (!init_fb()) {
-    cout << "init_fb() failed." << endl;
-    return 1;
-  }
+    cout << "start" << endl;
 
-  // Initialize WebCam
-  if (dmp::util::open_cam(CIMAGE_W, CIMAGE_H, 20)) {
-    cout << "failed camera init" << endl;
-    return -1;
-  }
-
-  /* Initialize network object */
-      network.Verbose(0);
-  if (!network.Initialize()) {
-      cout << "Failed network init" << endl;
-      return -1;
-  }
-  /* if (!network.LoadWeights(FILENAME_WEIGHTS)) { */
-  /*     cout << "Failed load weights" << endl; */
-  /*     return -1; */
-  /* } */
-  if (!network.Commit()) {
-      cout << "Failed network commit" << endl;
-      return -1;
-  }
-  cout << "network init ok" << endl;
-
-  // Get HW module frequency
-  string conv_freq;
-  conv_freq = std::to_string(network.get_dv_info().conv_freq);
-
-  // Create background and image overlay
-  COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
-  bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
-  /* bg_overlay.load_ppm_img("fpgatitle"); */
-  COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
-  cam_overlay.alloc_mem_overlay(CIMAGE_W, CIMAGE_H);
-
-  /* string input; */
-  /* cin >> input; */
-
-  // Draw background two times for front and back buffer
- const char *titles[] = {
-   "CNN - Object Detection",
-   "Bounding Box and Object Class detection",
- };
- for (int i = 0; i < 2; ++i) {
-   bg_overlay.print_to_display(0, 0);
-   print_demo_title(bg_overlay, titles);
-   swap_buffer();
- }
-
-  int exit_code = -1;
-  bool pause = false;
-  std::vector<float> tensor;
-  std::vector<float> boxes;
-  // Enter main loop
-  while (exit_code == -1) {
-    // If not pause, get next image from WebCam
-    if (!pause) {
-      if (capture_cam(imgView, CIMAGE_W, CIMAGE_H, 0, 0, CIMAGE_W, CIMAGE_H))
-      {
-        break;
-      }
-      // 推測にまわすデータを作成
-       cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
-      // Pre-process the image data
-    //   preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H,
-                    // 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
+    // Initialize frame buffer
+    if (!init_fb()) {
+        return 1;
     }
 
-    // Run network in HW
-    // memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6);
-    // network.RunNetwork();
+    // Initialize WebCam
+    if (dmp::util::open_cam(CIMAGE_W, CIMAGE_H, 20)) {
+        return -1;
+    }
 
-    // Handle output from HW
-    // network.get_final_output(tensor);
-    // get_bboxes(tensor, boxes);
-    // draw_bboxes(boxes, cam_overlay);
+    /* Initialize network object */
+        /* network.Verbose(0); */
+    /* if (!network.Initialize()) { */
+        /* ERR("Failed network init\n"); */
+        /* return -1; */
+    /* } */
+    /* if (!network.LoadWeights(FILENAME_WEIGHTS)) { */
+    /*     ERR("Failed load weights\n"); */
+    /*     return -1; */
+    /* } */
+    /* if (!network.Commit()) { */
+    /*     ERR("Failed network commit\n"); */
+    /*     return -1; */
+    /* } */
 
-    // Draw detection result to screen
-    cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
+    /* ERR("network init ok\n"); */
 
-    // Output HW processing times
-    // int conv_time_tot = network.get_conv_usec();
-    // print_conv_time(bg_overlay, (165 + CIMAGE_H), conv_time_tot, conv_freq);
+    // Get HW module frequency
+    /* string conv_freq; */
+    /* conv_freq = std::to_string(network.get_dv_info().conv_freq); */
 
-    swap_buffer();
+    // Create background and image overlay
+    COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
+    bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
+    /* bg_overlay.load_ppm_img("fpgatitle"); */
+    COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
+    cam_overlay.alloc_mem_overlay(CIMAGE_W, CIMAGE_H);
 
-    handle_keyboard_input(exit_code, pause);
-  }
+    ERR("init ok");
+    /* string input; */
+    /* cin >> input; */
 
-  shutdown();
-  close_cam();
+    // Draw background two times for front and back buffer
+    /* const char *titles[] = { */
+    /*     "CNN - Object Detection", */
+    /*     "Bounding Box and Object Class detection", */
+    /* }; */
+    for (int i = 0; i < 2; ++i) {
+        bg_overlay.print_to_display(0, 0);
+        /* print_demo_title(bg_overlay, titles); */
+        swap_buffer();
+    }
 
-  return exit_code;
+    int exit_code = -1;
+    bool pause = false;
+    std::vector<float> tensor;
+    std::vector<float> boxes;
+
+    // Enter main loop
+    while (exit_code == -1) {
+        // If not pause, get next image from WebCam
+        if (!pause) {
+            if (capture_cam(imgView, CIMAGE_W, CIMAGE_H, 0, 0, CIMAGE_W, CIMAGE_H))
+            {
+                break;
+            }
+            // 推測にまわすデータを作成
+            cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
+            // Pre-process the image data
+            //   preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H,
+            // 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
+        }
+
+        // Run network in HW
+        // memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6);
+        // network.RunNetwork();
+
+        // Handle output from HW
+        // network.get_final_output(tensor);
+        // get_bboxes(tensor, boxes);
+        // draw_bboxes(boxes, cam_overlay);
+
+        // Draw detection result to screen
+        cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
+
+        // Output HW processing times
+        // int conv_time_tot = network.get_conv_usec();
+        // print_conv_time(bg_overlay, (165 + CIMAGE_H), conv_time_tot, conv_freq);
+
+        swap_buffer();
+
+        handle_keyboard_input(exit_code, pause);
+    }
+
+    shutdown();
+    close_cam();
+
+    return exit_code;
 }
