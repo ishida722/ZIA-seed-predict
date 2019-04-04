@@ -73,6 +73,38 @@ __fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
 void get_bboxes(const vector<float> &tensor, vector<float> &boxes);
 void draw_bboxes(const vector<float> &boxes, COverlayRGB &overlay);
 
+COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
+COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
+
+void DrawBackGround()
+{
+    // Draw background two times for front and back buffer
+    for (int i = 0; i < 2; ++i) {
+        bg_overlay.print_to_display(0, 0);
+        swap_buffer();
+    }
+}
+
+void UpdateFrameBuffer(std::vector<float> tensor, string conv_freq)
+{
+        string s = std::to_string(tensor.front());
+        bg_overlay.set_text(0, 0, s, 12, 0x0042f4eb);
+        bg_overlay.print_to_display(0, 0);
+
+        // Draw detection result to screen
+        cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
+
+        // Print identification result to screen
+        // print_result and catrank functions are defined in util_draw.cpp
+        print_result(catstr_vec, (SCREEN_W / 5), IMAGE_W + 245, catrank(&tensor.front()), bg_overlay);
+
+        // Output HW processing times
+        int conv_time_tot = network.get_conv_usec();
+        print_conv_time(bg_overlay, (165 + CIMAGE_H), conv_time_tot, conv_freq);
+
+        swap_buffer();
+}
+
 int main(int argc, char **argv) {
     cout << "start" << endl;
 
@@ -101,36 +133,27 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    cout << "Netowork init ok" << endl;
+
     // Get HW module frequency
     string conv_freq;
     conv_freq = std::to_string(network.get_dv_info().conv_freq);
 
     // Create background and image overlay
-    COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
     bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
     /* bg_overlay.load_ppm_img("fpgatitle"); */
-    COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
     cam_overlay.alloc_mem_overlay(CIMAGE_W, CIMAGE_H);
 
-    ERR("init ok");
-    /* string input; */
-    /* cin >> input; */
+    DrawBackGround();
 
-    // Draw background two times for front and back buffer
-    const char *titles[] = {
-        "CNN - Object Detection",
-    };
-    for (int i = 0; i < 2; ++i) {
-        bg_overlay.print_to_display(0, 0);
-        print_demo_title(bg_overlay, titles);
-        swap_buffer();
-    }
+    cout << "Draw BG" << endl;
 
     int exit_code = -1;
     bool pause = false;
     std::vector<float> tensor;
     std::vector<float> boxes;
 
+    cout << "Start Main Loop" << endl;
     // Enter main loop
     while (exit_code == -1) {
         // If not pause, get next image from WebCam
@@ -151,28 +174,11 @@ int main(int argc, char **argv) {
 
         // Handle output from HW
         network.get_final_output(tensor);
+        cout << tensor.front();
         /* get_bboxes(tensor, boxes); */
         /* draw_bboxes(boxes, cam_overlay); */
 
-        string s = "{}".format(tensor);
-        bg_overlay.set_text(0, 0, s, 12, 0x0042f4eb);
-        bg_overlay.print_to_display(0, 0);
-
-        // Draw detection result to screen
-        cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
-
-        // Print identification result to screen
-        // print_result and catrank functions are defined in util_draw.cpp
-        /* print_result(catstr_vec, (SCREEN_W / 5), IMAGE_W + 245, */
-        /*         catrank(&tensor.front()), bg_overlay); */
-
-
-        // Output HW processing times
-        int conv_time_tot = network.get_conv_usec();
-        print_conv_time(bg_overlay, (165 + CIMAGE_H), conv_time_tot, conv_freq);
-
-        swap_buffer();
-
+        /* UpdateFrameBuffer(tensor, conv_freq); */
         handle_keyboard_input(exit_code, pause);
     }
 
