@@ -16,5 +16,9 @@ TGT  = ./bin/Seed-predict
 all : $(OBJS)
 	$(GPP) $(LFLAGS) $(OBJS) -o $(TGT) $(LIB)
 
+run : $(TGT)
+	make
+	$(TGT)
+
 clean:
 	rm -f *.o $(TGT)
