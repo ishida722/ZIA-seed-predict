@@ -37,6 +37,7 @@
 #include "util_input.h"
 #include "demo_common.h"
 #include "imagenet_1000_categories.h"
+#include "opencv2/opencv.hpp"
 
 using namespace std;
 using namespace dmp;
@@ -50,8 +51,8 @@ using namespace util;
 #define IMAGE_W 640
 #define IMAGE_H 512
 
-#define CIMAGE_W 640
-#define CIMAGE_H 480
+#define CIMAGE_W 320
+#define CIMAGE_H 240
 
 #define PIMAGE_W 320
 #define PIMAGE_H 256
@@ -115,8 +116,18 @@ int main(int argc, char **argv) {
 
     // Initialize WebCam
     if (dmp::util::open_cam(CIMAGE_W, CIMAGE_H, 20)) {
+        cout << "Camera init error" << endl;
         return -1;
     }
+
+    /* cv::VideoCapture cap(0); */
+
+    /* if(!cap.isOpened())//カメラデバイスが正常にオープンしたか確認． */
+    /* { */
+    /*     //読み込みに失敗したときの処理 */
+    /*     cout << "Camera init error opencv" << endl; */
+    /*     return -1; */
+    /* } */
 
     /* Initialize network object */
         network.Verbose(0);
@@ -152,20 +163,24 @@ int main(int argc, char **argv) {
     bool pause = false;
     std::vector<float> tensor;
     std::vector<float> boxes;
+    cv::Mat frame;
 
     cout << "Start Main Loop" << endl;
     // Enter main loop
     while (exit_code == -1) {
         // If not pause, get next image from WebCam
         if (!pause) {
+            /* cap.read(frame); */
             if (capture_cam(imgView, CIMAGE_W, CIMAGE_H, 0, 0, CIMAGE_W, CIMAGE_H))
             {
+                cout << "Camera error" << endl;
                 break;
             }
             // 推測にまわすデータを作成
             cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
             // Pre-process the image data
             preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
+            /* cv::imshow("win", frame); */
         }
 
         // Run network in HW

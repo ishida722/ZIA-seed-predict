@@ -1,4 +1,4 @@
-include ../../../env.mk
+include ../../../../env.mk
 
 INC = -I../include
 
