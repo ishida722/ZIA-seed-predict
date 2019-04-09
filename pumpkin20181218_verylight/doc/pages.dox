@@ -1,0 +1,42 @@
+/*!*********************************************************************************
+\mainpage pumpkin20181218_verylight Documentation: Conversion results
+\section quick What to do next to run the app
+In the following section, one can find the conversion results of the network.In order to compile the corresponding application, one needs to :
+- Include the 2 generated files to the make / project
+- In the main file of the application, the network initialization is done with :
+  + network.Initialize();
+  + network.LoadWeights(FILENAME_WEIGHTS);
+  + network.Commit();
+  + where network is the instance of the current network class
+
+
+- To run the network :
+ + network.RunNetwork();
+
+
+- To get the results :
+
+  + network.get_final_output(tensor);
+  + where tensor is a vector of floats, allocated in the network function
+\section mapping FPGA Mapping summary table
+
+| ID | Layers | Type | Dim In | Dim Out | Param | Mem | No. MUL | No. ADD |
+| :- | :- | :- | :- | :- | :- | -: | -: | -: |
+| 0 | FPGA-Layer | Convolution | (64, 64, 1) | (32, 32, 32) | - | - | - | - |
+| 0-0 | conv2d_1 | Convolution | (64, 64, 1) | (64, 64, 32) | (5, 5) | 2880 | 3276800 | 3276800 |
+| 0-0 | max_pooling2d_1 | Pooling | (64, 64, 32) | (32, 32, 32) | (2, 2) | - | 0 | 98304 |
+| 1 | FPGA-Layer | Convolution | (32, 32, 32) | (16, 16, 64) | - | - | - | - |
+| 1-0 | conv2d_2 | Convolution | (32, 32, 32) | (32, 32, 64) | (5, 5) | 74368 | 52428800 | 52428800 |
+| 1-0 | max_pooling2d_2 | Pooling | (32, 32, 64) | (16, 16, 64) | (2, 2) | - | 0 | 49152 |
+| 2 | FPGA-Layer | Flatten | (16, 16, 64) | (16384,) | - | - | - | - |
+| 3 | FPGA-Layer | InnerProduct | (16384,) | (1024,) | - | - | - | - |
+| 3-0 | dense_1 | InnerProduct | (16384,) | (1024,) | - | 16779776 | 16777216 | 16777216 |
+| 4 | FPGA-Layer | InnerProduct | (1024,) | (2,) | - | - | - | - |
+| 4-0 | dense_2 | InnerProduct | (1024,) | (2,) | - | 2576 | 2048 | 2048 |
+| 5 | FPGA-Layer | SoftMax | (2,) | (2,) | - | - | - | - |
+| SUM | - | - | - | - | - | - | 72484864 | 72632320 |
+
+\section graph Graph
+\dotfile pumpkin20181218_verylight.dot
+
+***********************************************************************************/

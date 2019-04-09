@@ -1,0 +1,56 @@
+digraph G{
+    subgraph cluster_0{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        conv2d_1->max_pooling2d_1
+        label = "Layer_0"
+    }
+    Input->conv2d_1
+
+    subgraph cluster_1{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        conv2d_2->max_pooling2d_2
+        label = "Layer_1"
+    }
+    max_pooling2d_1->conv2d_2
+
+    subgraph cluster_2{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        flatten_1
+        label = "Layer_2"
+    }
+    max_pooling2d_2->flatten_1
+
+    subgraph cluster_3{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        dense_1
+        label = "Layer_3"
+    }
+    flatten_1->dense_1
+
+    subgraph cluster_4{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        dense_2
+        label = "Layer_4"
+    }
+    dense_1->dense_2
+
+    subgraph cluster_5{
+        style = filled;
+        color = lightgrey;
+        node[style = filled,color = white];
+        activation_4
+        label = "Layer_5"
+    }
+    dense_2->activation_4
+
+}
