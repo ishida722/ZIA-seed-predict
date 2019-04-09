@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-#include "KerasGoogLeNet_gen.h"
+#include "pumpkin20181218_verylight_gen.h"
 #include "util_draw.h"
 #include "util_input.h"
 #include "demo_common.h"
@@ -43,7 +43,7 @@ using namespace std;
 using namespace dmp;
 using namespace util;
 
-#define FILENAME_WEIGHTS "KerasGoogLeNet_weights.bin"
+#define FILENAME_WEIGHTS "pumpkin20181218_verylight_weights.bin"
 
 #define SCREEN_W (get_screen_width())
 #define SCREEN_H (get_screen_height())
@@ -54,21 +54,18 @@ using namespace util;
 #define CIMAGE_W 320
 #define CIMAGE_H 240
 
-#define PIMAGE_W 320
-#define PIMAGE_H 256
+#define PIMAGE_W 64
+#define PIMAGE_H 64
 
 #define ERR(...) fprintf(stderr, __VA_ARGS__); fflush(stderr)
 
 // Define CNN network model object
-CKerasGoogLeNet network;
+/* CKerasGoogLeNet network; */
+Cpumpkin20181218_verylight network; 
 
 // Categories strings
 std::vector<std::string> catstr_vec(categories, categories + 1000);
 
-// Buffer for decoded image data
-uint32_t imgView[IMAGE_W * IMAGE_H];
-// Buffer for pre-processed image data
-__fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
 
 // Post-processing functions, defined in YOLOv3_post.cpp
 void get_bboxes(const vector<float> &tensor, vector<float> &boxes);
@@ -109,6 +106,11 @@ int main(int argc, char **argv) {
     string conv_freq;
     conv_freq = std::to_string(network.get_dv_info().conv_freq);
 
+    // Buffer for decoded image data
+    uint32_t imgView[IMAGE_W * IMAGE_H];
+    // Buffer for pre-processed image data
+    __fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
+
     COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
     bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
     bg_overlay.load_ppm_img("fpgatitle");
@@ -118,8 +120,7 @@ int main(int argc, char **argv) {
 
     // Draw background two times for front and back buffer
     const char *titles[] = {
-        "CNN - Object Detection",
-        "Bounding Box and Object Class detection",
+        "Seed Predect",
     };
     for (int i = 0; i < 2; ++i) {
         bg_overlay.print_to_display(0, 0);
@@ -148,16 +149,18 @@ int main(int argc, char **argv) {
             // 推測にまわすデータを作成
             cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
             // Pre-process the image data
-            /* preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false); */
+            preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
         }
 
         // Run network in HW
-        /* memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6); */
-        /* network.RunNetwork(); */
+        memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6);
+        network.RunNetwork();
 
         // Handle output from HW
-        /* network.get_final_output(tensor); */
-        /* cout << tensor.front(); */
+        network.get_final_output(tensor);
+        std::vector<std::pair<float, int>> ranks;
+        ranks = catrank(&tensor.front(), (int)tensor.size());
+        cout << ranks[0].second << endl;
         /* get_bboxes(tensor, boxes); */
         /* draw_bboxes(boxes, cam_overlay); */
 

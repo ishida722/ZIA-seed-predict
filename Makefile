@@ -7,7 +7,7 @@ CFLAGS = -pthread -std=c++11 $(OPT) -Wall -Werror -c $(INC) -g -O0
 LFLAGS = -pthread -std=c++11 $(OPT)
 
 DEPS = Seed_gen.h
-OBJS = KerasGoogLeNet_gen.o seed_predict.o
+OBJS = pumpkin20181218_verylight_gen.o seed_predict.o
 TGT  = ./bin/Seed-predict
 
 %.o: src/%.cpp
