@@ -65,11 +65,8 @@ Cpumpkin20181218_verylight network;
 
 // Categories strings
 std::vector<std::string> catstr_vec(categories, categories + 1000);
+std::vector<std::string> seed_strings = { "NG","OK" };
 
-
-// Post-processing functions, defined in YOLOv3_post.cpp
-void get_bboxes(const vector<float> &tensor, vector<float> &boxes);
-void draw_bboxes(const vector<float> &boxes, COverlayRGB &overlay);
 
 int main(int argc, char **argv) {
     cout << "start" << endl;
@@ -160,11 +157,14 @@ int main(int argc, char **argv) {
         network.get_final_output(tensor);
         std::vector<std::pair<float, int>> ranks;
         ranks = catrank(&tensor.front(), (int)tensor.size());
-        cout << ranks[0].second << endl;
-        /* get_bboxes(tensor, boxes); */
-        /* draw_bboxes(boxes, cam_overlay); */
+        int label_num = ranks[0].second;
+        std::string label = seed_strings[label_num];
+        /* float score = ranks[0].first; */
+        cout << label << endl;
 
         /* UpdateFrameBuffer(tensor, conv_freq); */
+        bg_overlay.set_text(0, 0, label, 10, 0, 10);
+        bg_overlay.print_to_display(0, 0);
         cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
         swap_buffer();
         handle_keyboard_input(exit_code, pause);
