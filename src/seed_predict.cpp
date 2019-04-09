@@ -74,38 +74,6 @@ __fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
 void get_bboxes(const vector<float> &tensor, vector<float> &boxes);
 void draw_bboxes(const vector<float> &boxes, COverlayRGB &overlay);
 
-COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
-COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
-
-void DrawBackGround()
-{
-    // Draw background two times for front and back buffer
-    for (int i = 0; i < 2; ++i) {
-        bg_overlay.print_to_display(0, 0);
-        swap_buffer();
-    }
-}
-
-void UpdateFrameBuffer(std::vector<float> tensor, string conv_freq)
-{
-        string s = std::to_string(tensor.front());
-        bg_overlay.set_text(0, 0, s, 12, 0x0042f4eb);
-        bg_overlay.print_to_display(0, 0);
-
-        // Draw detection result to screen
-        cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
-
-        // Print identification result to screen
-        // print_result and catrank functions are defined in util_draw.cpp
-        print_result(catstr_vec, (SCREEN_W / 5), IMAGE_W + 245, catrank(&tensor.front()), bg_overlay);
-
-        // Output HW processing times
-        int conv_time_tot = network.get_conv_usec();
-        print_conv_time(bg_overlay, (165 + CIMAGE_H), conv_time_tot, conv_freq);
-
-        swap_buffer();
-}
-
 int main(int argc, char **argv) {
     cout << "start" << endl;
 
@@ -119,15 +87,6 @@ int main(int argc, char **argv) {
         cout << "Camera init error" << endl;
         return -1;
     }
-
-    /* cv::VideoCapture cap(0); */
-
-    /* if(!cap.isOpened())//カメラデバイスが正常にオープンしたか確認． */
-    /* { */
-    /*     //読み込みに失敗したときの処理 */
-    /*     cout << "Camera init error opencv" << endl; */
-    /*     return -1; */
-    /* } */
 
     /* Initialize network object */
         network.Verbose(0);
@@ -150,13 +109,23 @@ int main(int argc, char **argv) {
     string conv_freq;
     conv_freq = std::to_string(network.get_dv_info().conv_freq);
 
-    // Create background and image overlay
+    COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
     bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
-    /* bg_overlay.load_ppm_img("fpgatitle"); */
+    bg_overlay.load_ppm_img("fpgatitle");
+    COverlayRGB cam_overlay(SCREEN_W, SCREEN_H);
     cam_overlay.alloc_mem_overlay(CIMAGE_W, CIMAGE_H);
 
-    DrawBackGround();
 
+    // Draw background two times for front and back buffer
+    const char *titles[] = {
+        "CNN - Object Detection",
+        "Bounding Box and Object Class detection",
+    };
+    for (int i = 0; i < 2; ++i) {
+        bg_overlay.print_to_display(0, 0);
+        print_demo_title(bg_overlay, titles);
+        swap_buffer();
+    }
     cout << "Draw BG" << endl;
 
     int exit_code = -1;
@@ -179,21 +148,22 @@ int main(int argc, char **argv) {
             // 推測にまわすデータを作成
             cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
             // Pre-process the image data
-            preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
-            /* cv::imshow("win", frame); */
+            /* preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false); */
         }
 
         // Run network in HW
-        memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6);
-        network.RunNetwork();
+        /* memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6); */
+        /* network.RunNetwork(); */
 
         // Handle output from HW
-        network.get_final_output(tensor);
-        cout << tensor.front();
+        /* network.get_final_output(tensor); */
+        /* cout << tensor.front(); */
         /* get_bboxes(tensor, boxes); */
         /* draw_bboxes(boxes, cam_overlay); */
 
         /* UpdateFrameBuffer(tensor, conv_freq); */
+        cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
+        swap_buffer();
         handle_keyboard_input(exit_code, pause);
     }
 
