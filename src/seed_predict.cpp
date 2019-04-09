@@ -59,6 +59,9 @@ using namespace util;
 
 #define ERR(...) fprintf(stderr, __VA_ARGS__); fflush(stderr)
 
+const uint32_t RED = 0x00FF0000;
+const uint32_t BLUE = 0x000000FF;
+
 // Define CNN network model object
 /* CKerasGoogLeNet network; */
 Cpumpkin20181218_verylight network; 
@@ -66,7 +69,7 @@ Cpumpkin20181218_verylight network;
 // Categories strings
 std::vector<std::string> catstr_vec(categories, categories + 1000);
 std::vector<std::string> seed_strings = { "NG","OK" };
-
+std::vector<uint32_t> seed_colors = {RED, BLUE};
 
 int main(int argc, char **argv) {
     cout << "start" << endl;
@@ -107,6 +110,8 @@ int main(int argc, char **argv) {
     uint32_t imgView[IMAGE_W * IMAGE_H];
     // Buffer for pre-processed image data
     __fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
+    // buffer for result
+
 
     COverlayRGB bg_overlay(SCREEN_W, SCREEN_H);
     bg_overlay.alloc_mem_overlay(SCREEN_W, SCREEN_H);
@@ -160,11 +165,29 @@ int main(int argc, char **argv) {
         int label_num = ranks[0].second;
         std::string label = seed_strings[label_num];
         /* float score = ranks[0].first; */
-        cout << label << endl;
 
-        /* UpdateFrameBuffer(tensor, conv_freq); */
-        bg_overlay.set_text(0, 0, label, 10, 0, 10);
-        bg_overlay.print_to_display(0, 0);
+        // Result
+        unsigned text_size = 20;
+        unsigned w = 0;
+        unsigned h = 0;
+        string s = label;
+        COverlayRGB::calculate_boundary_text(s, text_size, w, h);
+        COverlayRGB predict_text(SCREEN_W, SCREEN_H);
+        predict_text.alloc_mem_overlay(w, h);
+
+        int x = SCREEN_W/2;
+        int y = SCREEN_H * 0.75;
+
+        //clear previous text
+        COverlayRGB clear_bg(SCREEN_W, SCREEN_H);
+        clear_bg.alloc_mem_overlay(SCREEN_W, h);
+        clear_bg.copy_overlay(bg_overlay, 0, y);
+        clear_bg.print_to_display(0, y);
+
+        predict_text.copy_overlay(bg_overlay,x, y);
+        predict_text.set_text(0, 0, s, text_size, seed_colors[label_num]);
+        predict_text.print_to_display(x, y);
+
         cam_overlay.print_to_display(((SCREEN_W - CIMAGE_W) / 2), 145);
         swap_buffer();
         handle_keyboard_input(exit_code, pause);
