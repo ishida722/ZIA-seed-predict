@@ -71,6 +71,167 @@ std::vector<std::string> catstr_vec(categories, categories + 1000);
 std::vector<std::string> seed_strings = { "NG","OK" };
 std::vector<uint32_t> seed_colors = {RED, BLUE};
 
+
+void preproc_image_gray(uint32_t *__restrict imgView, __fp16 *__restrict imgProc,
+                   int img_width, int img_height, float r_offs, float g_offs,
+                   float b_offs, float sf, bool transpose, bool is_bgr) {
+  int i = 0, j = 0;
+  for (int y = 0; y < img_height; y++) {
+    if (transpose) j = 1 * y;
+    for (int x = 0; x < img_width; x++) {
+      uint32_t rgba = imgView[i];
+      i++;
+      unsigned char r = (rgba >> 24);
+      unsigned char g = (rgba >> 16) & 0xFF;
+      unsigned char b = (rgba >> 8) & 0xFF;
+      imgProc[j] = (__fp16)(sf * (b_offs + (r+g+b)/3));
+      j++;
+      }
+      if (transpose) j += 1 * (img_height - 1);
+    }
+  }
+
+
+void preproc_image_gray(uint32_t *__restrict imgView, __fp16 *__restrict imgProc,
+                   int inimg_width, int inimg_height, int outimg_width,
+                   int outimg_height, float r_offs, float g_offs, float b_offs,
+                   float sf, bool transpose, bool is_bgr) {
+  uint32_t *imgIn = imgView, *imgOut = nullptr;
+
+  while (inimg_width >= outimg_width * 2 && inimg_height >= outimg_height * 2) {
+    int nw = inimg_width / 2;
+    int nh = inimg_height / 2;
+    imgOut = new uint32_t[nw * nh];
+    for (int y = 0; y < nh; y++) {
+      for (int x = 0; x < nw; x++) {
+        uint32_t p, pr = 0, pg = 0, pb = 0;
+        p = imgIn[(y * 2 + 0) * inimg_width + (x * 2 + 0)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        p = imgIn[(y * 2 + 0) * inimg_width + (x * 2 + 1)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        p = imgIn[(y * 2 + 1) * inimg_width + (x * 2 + 0)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        p = imgIn[(y * 2 + 1) * inimg_width + (x * 2 + 1)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        pr /= 4;
+        pg /= 4;
+        pb /= 4;
+        imgOut[y * nw + x] = (pr << 24) | (pg << 16) | (pb << 8);
+      }
+    }
+    inimg_width = nw;
+    inimg_height = nh;
+    if (imgIn != imgView) delete[] imgIn;
+    imgIn = imgOut;
+  }
+
+  while (inimg_width >= outimg_width * 2) {
+    int nw = inimg_width / 2;
+    int nh = inimg_height;
+    imgOut = new uint32_t[nw * nh];
+    for (int y = 0; y < nh; y++) {
+      for (int x = 0; x < nw; x++) {
+        uint32_t p, pr = 0, pg = 0, pb = 0;
+        p = imgIn[y * inimg_width + (x * 2 + 0)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        p = imgIn[y * inimg_width + (x * 2 + 1)];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        pr /= 2;
+        pg /= 2;
+        pb /= 2;
+        imgOut[y * nw + x] = (pr << 24) | (pg << 16) | (pb << 8);
+      }
+    }
+    inimg_width = nw;
+    if (imgIn != imgView) delete[] imgIn;
+    imgIn = imgOut;
+  }
+
+  while (inimg_height >= outimg_height * 2) {
+    int nw = inimg_width;
+    int nh = inimg_height / 2;
+    imgOut = new uint32_t[nw * nh];
+    for (int y = 0; y < nh; y++) {
+      for (int x = 0; x < nw; x++) {
+        uint32_t p, pr = 0, pg = 0, pb = 0;
+        p = imgIn[(y * 2 + 0) * inimg_width + x];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        p = imgIn[(y * 2 + 1) * inimg_width + x];
+        pr += (p >> 24);
+        pg += (p >> 16) & 0xFF;
+        pb += (p >> 8) & 0xFF;
+        pr /= 2;
+        pg /= 2;
+        pb /= 2;
+        imgOut[y * nw + x] = (pr << 24) | (pg << 16) | (pb << 8);
+      }
+    }
+    inimg_height = nh;
+    if (imgIn != imgView) delete[] imgIn;
+    imgIn = imgOut;
+  }
+
+  if (inimg_width != outimg_width || inimg_height != outimg_height) {
+    int nw = outimg_width;
+    int nh = outimg_height;
+    float sx = float(inimg_width) / float(outimg_width);
+    float sy = float(inimg_height) / float(outimg_height);
+    imgOut = new uint32_t[nw * nh];
+    for (int y = 0; y < nh; y++) {
+      float ty = y * sy;
+      int iy = int(ty);
+      float ry = ty - iy;
+      for (int x = 0; x < nw; x++) {
+        float tx = x * sx;
+        int ix = int(tx);
+        float rx = tx - ix;
+        float r = 0.f, g = 0.f, b = 0.f;
+        uint32_t p;
+        p = imgIn[(iy + 0) * inimg_width + (ix + 0)];
+        r += (p >> 24) * rx * ry;
+        g += ((p >> 16) & 0xFF) * rx * ry;
+        b += ((p >> 8) & 0xFF) * rx * ry;
+        p = imgIn[(iy + 0) * inimg_width + (ix + 1)];
+        r += (p >> 24) * (1.f - rx) * ry;
+        g += ((p >> 16) & 0xFF) * (1.f - rx) * ry;
+        b += ((p >> 8) & 0xFF) * (1.f - rx) * ry;
+        p = imgIn[(iy + 1) * inimg_width + (ix + 0)];
+        r += (p >> 24) * rx * (1.f - ry);
+        g += ((p >> 16) & 0xFF) * rx * (1.f - ry);
+        b += ((p >> 8) & 0xFF) * rx * (1.f - ry);
+        p = imgIn[(iy + 1) * inimg_width + (ix + 1)];
+        r += (p >> 24) * (1.f - rx) * (1.f - ry);
+        g += ((p >> 16) & 0xFF) * (1.f - rx) * (1.f - ry);
+        b += ((p >> 8) & 0xFF) * (1.f - rx) * (1.f - ry);
+        unsigned char pr = static_cast<unsigned char>(r);
+        unsigned char pg = static_cast<unsigned char>(g);
+        unsigned char pb = static_cast<unsigned char>(b);
+        imgOut[y * nw + x] = (pr << 24) | (pg << 16) | (pb << 8);
+      }
+    }
+    inimg_width = nw;
+    inimg_height = nh;
+    if (imgIn != imgView) delete[] imgIn;
+    imgIn = imgOut;
+  }
+  preproc_image_gray(imgIn, imgProc, outimg_width, outimg_height, r_offs, g_offs,
+                b_offs, sf, transpose, is_bgr);
+  if (imgIn != imgView) delete[] imgIn;
+}
 int main(int argc, char **argv) {
     cout << "start" << endl;
 
@@ -109,7 +270,7 @@ int main(int argc, char **argv) {
     // Buffer for decoded image data
     uint32_t imgView[IMAGE_W * IMAGE_H];
     // Buffer for pre-processed image data
-    __fp16 imgProc[PIMAGE_W * PIMAGE_H * 3];
+    __fp16 imgProc[PIMAGE_W * PIMAGE_H * 1];
     // buffer for result
 
 
@@ -142,7 +303,6 @@ int main(int argc, char **argv) {
     while (exit_code == -1) {
         // If not pause, get next image from WebCam
         if (!pause) {
-            /* cap.read(frame); */
             if (capture_cam(imgView, CIMAGE_W, CIMAGE_H, 0, 0, CIMAGE_W, CIMAGE_H))
             {
                 cout << "Camera error" << endl;
@@ -151,11 +311,11 @@ int main(int argc, char **argv) {
             // 推測にまわすデータを作成
             cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
             // Pre-process the image data
-            preproc_image(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
+            preproc_image_gray(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
         }
 
         // Run network in HW
-        memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 6);
+        memcpy(network.get_network_input_addr_cpu(), imgProc, PIMAGE_W * PIMAGE_H * 2);
         network.RunNetwork();
 
         // Handle output from HW
@@ -175,7 +335,7 @@ int main(int argc, char **argv) {
         COverlayRGB predict_text(SCREEN_W, SCREEN_H);
         predict_text.alloc_mem_overlay(w, h);
 
-        int x = SCREEN_W/2;
+        int x = SCREEN_W / 2;
         int y = SCREEN_H * 0.75;
 
         //clear previous text
