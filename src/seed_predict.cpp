@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
             // 推測にまわすデータを作成
             cam_overlay.convert_to_overlay_pixel_format(imgView, CIMAGE_W*CIMAGE_H);
             // Pre-process the image data
-            preproc_image_gray(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, true, false);
+            preproc_image_gray(imgView, imgProc, IMAGE_W, IMAGE_H, PIMAGE_W, PIMAGE_H, 0.0, 0.0, 0.0, 1.0 / 255.0, false, false);
         }
 
         // Run network in HW
