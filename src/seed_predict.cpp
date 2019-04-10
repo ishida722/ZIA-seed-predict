@@ -325,12 +325,14 @@ int main(int argc, char **argv) {
         int label_num = ranks[0].second;
         std::string label = seed_strings[label_num];
         /* float score = ranks[0].first; */
+        int time_fpga = network.get_conv_usec() + network.get_fc_usec();
+        int time_cpu = network.get_cpu_usec();
 
         // Result
         unsigned text_size = 20;
         unsigned w = 0;
         unsigned h = 0;
-        string s = label;
+        string s = label + " FPGA " + to_string(time_fpga) + "us" + " CPU " + to_string(time_cpu) + "us";
         COverlayRGB::calculate_boundary_text(s, text_size, w, h);
         COverlayRGB predict_text(SCREEN_W, SCREEN_H);
         predict_text.alloc_mem_overlay(w, h);
