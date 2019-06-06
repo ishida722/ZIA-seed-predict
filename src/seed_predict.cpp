@@ -91,7 +91,6 @@ void preproc_image_gray(uint32_t *__restrict imgView, __fp16 *__restrict imgProc
     }
   }
 
-
 void preproc_image_gray(uint32_t *__restrict imgView, __fp16 *__restrict imgProc,
                    int inimg_width, int inimg_height, int outimg_width,
                    int outimg_height, float r_offs, float g_offs, float b_offs,
@@ -232,6 +231,7 @@ void preproc_image_gray(uint32_t *__restrict imgView, __fp16 *__restrict imgProc
                 b_offs, sf, transpose, is_bgr);
   if (imgIn != imgView) delete[] imgIn;
 }
+
 int main(int argc, char **argv) {
     cout << "start" << endl;
 
