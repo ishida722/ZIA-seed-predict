@@ -16,6 +16,12 @@ TGT  = ./bin/Seed-predict
 %.o: src/%.cpp
 	$(GPP) $(CFLAGS) -o $@ $<
 
+seed_net_wrap.o:
+	g++ -std=c++11 -O3 -fPIC -c -I/usr/include/python3.6 $(INC) -o $@ pumpkin20181218_verylight/seed_net_wrap.cpp
+
+seed_net_wrap.so:
+	g++ -std=c++11 -shared -fPIC seed_net_wrap.o pumpkin20181218_verylight_gen.o dmp_network.o -o $@ -L/path/to/dv-user-driver -ldmpdv -lboost_python3 -lboost_numpy3
+
 all : $(OBJS)
 	$(GPP) $(LFLAGS) $(OBJS) -o $(TGT) $(LIB)
 
